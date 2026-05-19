@@ -1,0 +1,148 @@
+# Use Case 3: Pipeline Leak Detection & Integrity Agent
+
+## Segment: Midstream | Amazon Bedrock AgentCore
+
+---
+
+## The Problem
+
+A midstream operator manages 200 miles of natural gas transmission pipeline with 8 SCADA measurement stations. Leaks manifest as pressure drops and flow imbalances between adjacent stations, but distinguishing a real leak from normal operational transients (compressor starts, valve changes, temperature-driven line pack shifts) requires contextual reasoning that rule-based SCADA alarms cannot do.
+
+The result is a lose-lose situation: set the alarm threshold too sensitive and you get constant false alarms that cause unnecessary shutdowns ($100K+ per event) and alarm fatigue. Set it too conservative and you miss real leaks. Over 40% of pipeline leaks in remote areas go undetected for more than a week, a delay that can escalate repair costs by 600% while risking environmental disasters.
+
+DOT PHMSA penalties for pipeline incidents reach up to $2.7M per violation. Modern AI-driven leak detection systems achieve 98% accuracy in pinpointing leaks and reduce detection time from days to minutes. The challenge is not just detection, it is intelligent disambiguation: knowing when an anomaly is a real leak vs. a compressor transient vs. a cold morning causing line pack contraction. That requires an agent that reasons in context, not just a threshold alarm.
+
+## The Solution
+
+Build an autonomous pipeline integrity agent using **Amazon Bedrock AgentCore** that monitors SCADA telemetry, reasons about anomalies in full operational context, localizes potential leak segments, assesses severity, and orchestrates the incident response workflow while maintaining persistent memory of the pipeline's normal operating behavior so it can distinguish real events from noise.
+
+The agent reasons like an experienced pipeline controller. When it sees a pressure drop, it does not just fire an alert. It checks whether a compressor started recently, fetches live weather data to correct for temperature-driven line pack changes, runs a mass balance calculation across all stations, estimates the leak rate and location using pipeline physics, checks the regulatory reporting threshold, and drafts a complete incident notification with recommended isolation actions. The control room operator gets a full diagnostic package in under 5 minutes, not a raw alarm.
+
+---
+
+## AWS Services to Use
+
+### Amazon Bedrock AgentCore (Required)
+
+- **AgentCore Runtime** -- Deploy and host your agent. Triggered by EventBridge when readings breach configurable thresholds. Handles scaling and session management automatically.
+- **AgentCore Memory** -- Short-term memory maintains full incident investigation context within a session. Long-term memory persists the pipeline's operational baseline and incident history so the agent learns what "normal" looks like for each station and uses that to disambiguate future anomalies.
+- **AgentCore Code Interpreter** -- Secure sandboxed Python execution for mass balance calculations, pressure transient analysis, temperature-corrected line pack estimation, leak rate calculation, and segment localization.
+- **AgentCore Gateway** -- Expose SCADA query Lambda, incident management Lambda, and the Bedrock Knowledge Base as MCP tools the agent calls natively.
+- **AgentCore Browser** -- Fetch real-time weather and temperature data. Temperature drops cause line pack contraction that mimics leak signatures. The agent uses live weather data to correct for this before declaring an anomaly real.
+
+### Amazon Bedrock
+
+- **Knowledge Bases** -- Index pipeline specs, operating procedures, DOT/PHMSA regulatory requirements, and historical incident library.
+- **Claude Sonnet 4.6** -- Foundation model for reasoning, severity assessment, and incident report generation.
+
+### Supporting Services
+
+- AWS IoT Core -- Secure SCADA/RTU telemetry ingestion
+- Amazon Kinesis Data Streams -- Real-time telemetry pipeline
+- Amazon S3 -- Historical telemetry data lake
+- AWS Lambda -- SCADA query tool, incident creation, valve control interface
+- Amazon DynamoDB -- Incident log, station metadata, baseline operating envelopes
+- Amazon EventBridge -- Triggers agent when readings breach anomaly thresholds
+- Amazon SNS -- Alert notifications to control room
+- Amazon Quick (QuickSight) -- Live pipeline map with pressure/flow readings and anomaly highlighting
+
+---
+
+## Dataset Provided
+
+### 1. SCADA Time-Series CSV -- 90 days of 30-second readings for 8 pipeline stations
+
+| Column | Description |
+|---|---|
+| `timestamp` | ISO 8601 datetime |
+| `station_id` | ST-01 through ST-08 |
+| `station_type` | compressor / meter / custody_transfer |
+| `pressure_psi` | Line pressure at station |
+| `pressure_upstream_psi` | Upstream tap pressure |
+| `flow_mmscfd` | Volumetric flow rate (million standard cubic feet per day) |
+| `flow_direction` | inlet / outlet |
+| `temperature_f` | Gas temperature at station |
+| `compressor_status` | running / standby / shutdown |
+| `compressor_speed_rpm` | Shaft speed (0 if not running) |
+| `valve_position_pct` | Control valve position (0-100%) |
+| `line_pack_mmscf` | Calculated line pack between this and next station |
+| `mass_balance_deficit_mmscfd` | Inlet minus outlet flow (positive = potential loss) |
+| `event_flag` | normal / compressor_start / valve_change / leak / false_positive |
+
+### 2. Labeled Leak Events CSV
+
+5 events: `event_id`, `onset_timestamp`, `true_leak_location_mile_marker`, `affected_segment`, `leak_rate_mmscfd`, `severity` (seep / moderate / significant / near_rupture), `detection_lag_minutes`
+
+### 3. Labeled False Positive Events CSV
+
+15 events: `event_id`, `timestamp`, `station_id`, `fp_type` (compressor_start / valve_change / temperature_line_pack), `pressure_drop_psi`, `duration_minutes`, `explanation`
+
+### 4. Pipeline Segment Metadata CSV
+
+`segment_id`, `from_station`, `to_station`, `length_miles`, `diameter_in`, `wall_thickness_in`, `material_grade`, `max_operating_pressure_psi`, `elevation_start_ft`, `elevation_end_ft`, `valve_locations_mile_markers`, `maop_psi`
+
+### 5. Gas Composition CSV
+
+`date`, `station_id`, `methane_pct`, `ethane_pct`, `propane_pct`, `co2_pct`, `n2_pct`, `h2s_ppm`, `heating_value_btu_scf`, `specific_gravity`, `compressibility_factor_z` -- required for accurate mass balance and line pack calculations
+
+### 6. Operating Procedures PDF
+
+Normal operating envelopes per station, isolation valve procedures, emergency shutdown steps, line pack calculation methodology, pressure transient response guide
+
+### 7. DOT PHMSA Regulatory Reference PDF
+
+49 CFR Part 191 reporting requirements, 5-minute notification rule, NRC contact (1-800-424-8802), required incident report fields, PHMSA Form 7100.1
+
+---
+
+## Example Output
+
+**Scenario:** Station 5 pressure drops 12 PSI in 8 minutes.
+
+```text
+PIPELINE INTEGRITY ALERT -- Incident INC-2026-0847
+Generated: 2026-03-26 09:14 UTC | Response time: 4 minutes 12 seconds
+
+ANOMALY ANALYSIS
+  Station 5 pressure: dropped 12 PSI in 8 minutes (742 to 730 PSI)
+  Station 4 flow: +3% above baseline (6.18 vs 6.00 MMSCFD)
+  Station 6 flow: -4% below baseline (5.52 vs 5.75 MMSCFD)
+  Mass balance deficit: 0.66 MMSCFD between Stations 5 and 6
+
+FALSE POSITIVE CHECK
+  Compressor events (last 2 hours): None logged at Station 5
+  Pattern match vs. 6 historical compressor-start signatures: No match
+  Weather correction: Ambient temp dropped 18F overnight
+    Line pack contraction accounts for 0.20 MMSCFD
+    Residual unexplained deficit: 0.46 MMSCFD
+  Assessment: REAL ANOMALY -- not a false positive
+
+LEAK LOCALIZATION
+  Affected segment: Station 5 to Station 6
+  Estimated location: Mile marker 118-134 (+/- 8 miles)
+  Estimated leak rate: 0.4-0.6 MMSCFD
+  Segment specs: 16-mile, 24-inch diameter, MOP 800 PSI
+
+SEVERITY ASSESSMENT: MODERATE RELEASE
+  DOT PHMSA threshold check: Exceeds 5-minute notification requirement (49 CFR 191.5)
+  Mandatory reporting: YES -- notify NRC within 5 minutes
+
+RECOMMENDED ACTIONS
+  1. Close isolation valve V-52 (mile marker 112)
+  2. Notify DOT PHMSA National Response Center: 1-800-424-8802
+  3. Dispatch inspection crew to mile marker 118-134
+  4. Monitor Stations 4 and 6 for pressure stabilization
+
+DRAFT REGULATORY NOTIFICATION
+  Operator: [Company Name] | Pipeline: [System Name]
+  Incident time: 2026-03-26 09:10 UTC
+  Location: Mile marker 118-134, [State]
+  Estimated release: 0.4-0.6 MMSCFD natural gas
+  Actions taken: Isolation valve V-52 closed at 09:18 UTC
+  [Full PHMSA Form 7100.1 attached]
+```
+
+---
+
+> **AgentCore Docs:** [https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/)
+> **Starter Toolkit:** [https://github.com/aws/bedrock-agentcore-starter-toolkit](https://github.com/aws/bedrock-agentcore-starter-toolkit)
