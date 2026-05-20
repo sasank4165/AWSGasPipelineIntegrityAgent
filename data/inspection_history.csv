@@ -1,0 +1,81 @@
+inspection_id,segment_id,date,inspection_type,result,anomaly_count,max_depth_pct_wt,anomaly_type
+INS-0001,SEG-04,2022-04-07,ILI UT,Repair Required,2,23.0,Dent
+INS-0002,SEG-01,2024-04-05,External Visual,Anomaly Found,8,,None
+INS-0003,SEG-05,2023-12-05,ILI MFL,Repair Required,7,19.9,None
+INS-0004,SEG-05,2023-06-09,ILI UT,Pass,6,86.1,Dent
+INS-0005,SEG-04,2020-11-07,Hydrostatic Test,Pass,9,,Gouge
+INS-0006,SEG-06,2020-06-18,Close Interval Survey,Pass,7,,Gouge
+INS-0007,SEG-01,2022-04-04,External Visual,Repair Required,0,,Weld Anomaly
+INS-0008,SEG-03,2021-02-21,Close Interval Survey,Pass,7,,None
+INS-0009,SEG-02,2025-01-17,Close Interval Survey,Anomaly Found,0,,Gouge
+INS-0010,SEG-02,2020-09-21,Hydrostatic Test,Pass,11,,None
+INS-0011,SEG-05,2022-06-23,ILI UT,Repair Required,10,17.6,Corrosion
+INS-0012,SEG-02,2020-02-17,DCVG Survey,Anomaly Found,1,,Weld Anomaly
+INS-0013,SEG-01,2023-07-18,ILI UT,Pass,9,0.6,Gouge
+INS-0014,SEG-05,2020-10-05,DCVG Survey,Pass,12,,Corrosion
+INS-0015,SEG-02,2023-08-04,DCVG Survey,Pass,8,,Weld Anomaly
+INS-0016,SEG-07,2024-08-16,ILI UT,Pass,11,47.6,Corrosion
+INS-0017,SEG-06,2020-09-25,Hydrostatic Test,Repair Required,12,,None
+INS-0018,SEG-05,2020-11-04,DCVG Survey,Pass,1,,Corrosion
+INS-0019,SEG-03,2020-10-21,ILI UT,Pass,6,14.6,Dent
+INS-0020,SEG-05,2024-12-08,External Visual,Anomaly Found,12,,Dent
+INS-0021,SEG-03,2024-09-28,ILI MFL,Pass,2,67.8,None
+INS-0022,SEG-01,2021-08-12,Close Interval Survey,Pass,5,,Dent
+INS-0023,SEG-04,2022-02-11,External Visual,Anomaly Found,6,,Weld Anomaly
+INS-0024,SEG-03,2024-07-24,Close Interval Survey,Pass,2,,Corrosion
+INS-0025,SEG-03,2025-03-05,Hydrostatic Test,Anomaly Found,12,,Weld Anomaly
+INS-0026,SEG-03,2021-04-16,Hydrostatic Test,Pass,10,,None
+INS-0027,SEG-01,2021-09-28,Hydrostatic Test,Pass,3,,None
+INS-0028,SEG-06,2024-07-15,Hydrostatic Test,Pass,6,,Gouge
+INS-0029,SEG-07,2022-06-16,ILI MFL,Anomaly Found,6,96.4,Gouge
+INS-0030,SEG-05,2020-05-22,External Visual,Pass,12,,Weld Anomaly
+INS-0031,SEG-02,2022-12-28,External Visual,Anomaly Found,4,,Weld Anomaly
+INS-0032,SEG-06,2025-06-05,Close Interval Survey,Pass,4,,Weld Anomaly
+INS-0033,SEG-06,2023-10-21,Close Interval Survey,Repair Required,10,,None
+INS-0034,SEG-02,2022-06-20,DCVG Survey,Pass,3,,Gouge
+INS-0035,SEG-06,2020-01-09,External Visual,Pass,3,,None
+INS-0036,SEG-02,2023-09-29,Hydrostatic Test,Pass,10,,Weld Anomaly
+INS-0037,SEG-07,2024-03-01,Hydrostatic Test,Pass,6,,None
+INS-0038,SEG-03,2024-10-30,Hydrostatic Test,Anomaly Found,0,,Corrosion
+INS-0039,SEG-05,2022-10-24,ILI UT,Pass,8,31.1,None
+INS-0040,SEG-02,2024-03-10,Close Interval Survey,Anomaly Found,3,,Gouge
+INS-0041,SEG-07,2024-03-13,Hydrostatic Test,Anomaly Found,7,,None
+INS-0042,SEG-06,2022-12-23,Close Interval Survey,Repair Required,12,,Gouge
+INS-0043,SEG-06,2021-02-14,ILI MFL,Pass,12,30.8,None
+INS-0044,SEG-01,2020-03-06,DCVG Survey,Pass,5,,None
+INS-0045,SEG-06,2023-07-06,Close Interval Survey,Repair Required,4,,Dent
+INS-0046,SEG-01,2024-03-29,DCVG Survey,Anomaly Found,12,,Dent
+INS-0047,SEG-04,2021-06-26,External Visual,Pass,2,,Weld Anomaly
+INS-0048,SEG-07,2024-11-12,Hydrostatic Test,Anomaly Found,6,,None
+INS-0049,SEG-06,2025-05-08,ILI UT,Pass,4,20.8,Weld Anomaly
+INS-0050,SEG-07,2023-03-18,Hydrostatic Test,Anomaly Found,2,,None
+INS-0051,SEG-04,2025-02-12,Close Interval Survey,Anomaly Found,10,,Dent
+INS-0052,SEG-05,2020-06-02,ILI UT,Anomaly Found,8,1.5,Gouge
+INS-0053,SEG-04,2024-06-18,ILI MFL,Pass,10,73.4,None
+INS-0054,SEG-05,2023-10-25,External Visual,Pass,9,,Gouge
+INS-0055,SEG-03,2022-04-27,ILI UT,Pass,9,92.0,Weld Anomaly
+INS-0056,SEG-01,2020-03-15,External Visual,Repair Required,3,,None
+INS-0057,SEG-03,2024-03-27,ILI UT,Anomaly Found,0,69.6,Weld Anomaly
+INS-0058,SEG-07,2021-04-15,ILI UT,Pass,7,17.2,Gouge
+INS-0059,SEG-03,2023-09-07,ILI MFL,Repair Required,3,77.6,Dent
+INS-0060,SEG-03,2023-12-08,Hydrostatic Test,Repair Required,1,,None
+INS-0061,SEG-01,2023-10-20,Hydrostatic Test,Pass,2,,Dent
+INS-0062,SEG-01,2023-01-21,ILI MFL,Repair Required,10,37.9,Gouge
+INS-0063,SEG-07,2024-11-18,Hydrostatic Test,Pass,9,,None
+INS-0064,SEG-05,2024-04-06,ILI UT,Pass,12,5.3,Gouge
+INS-0065,SEG-06,2024-07-15,DCVG Survey,Pass,4,,Dent
+INS-0066,SEG-01,2024-02-22,ILI UT,Anomaly Found,10,96.7,None
+INS-0067,SEG-01,2025-03-19,ILI UT,Anomaly Found,10,79.3,None
+INS-0068,SEG-02,2024-06-15,Close Interval Survey,Anomaly Found,11,,None
+INS-0069,SEG-07,2023-05-18,ILI MFL,Pass,2,77.4,Gouge
+INS-0070,SEG-03,2021-06-02,Close Interval Survey,Pass,9,,Weld Anomaly
+INS-0071,SEG-03,2020-02-11,ILI UT,Pass,0,88.1,None
+INS-0072,SEG-03,2023-02-12,External Visual,Pass,7,,Weld Anomaly
+INS-0073,SEG-01,2024-06-29,ILI MFL,Pass,2,60.6,Gouge
+INS-0074,SEG-03,2024-09-29,Hydrostatic Test,Pass,12,,None
+INS-0075,SEG-01,2025-06-06,DCVG Survey,Pass,9,,Dent
+INS-0076,SEG-02,2023-01-27,Hydrostatic Test,Pass,12,,None
+INS-0077,SEG-03,2025-04-06,Hydrostatic Test,Anomaly Found,6,,None
+INS-0078,SEG-07,2024-01-05,ILI UT,Pass,8,40.6,Corrosion
+INS-0079,SEG-02,2021-03-10,Hydrostatic Test,Pass,2,,None
+INS-0080,SEG-01,2023-03-07,DCVG Survey,Pass,9,,Corrosion

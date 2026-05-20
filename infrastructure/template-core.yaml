@@ -1,0 +1,264 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Pipeline Integrity Agent — core infrastructure (S3, DynamoDB, Lambda, SNS, IAM).
+  Knowledge Base deployed separately after OpenSearch collection is active.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  ProjectName:
+    Type: String
+    Default: pipeline-integrity-agent
+
+Resources:
+  # ============================================================
+  # S3 Bucket — SCADA data lake + Knowledge Base document source
+  # ============================================================
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-data-${AWS::AccountId}-${Environment}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ============================================================
+  # DynamoDB Tables
+  # ============================================================
+  PipelineSegmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-PipelineSegments-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: segment_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: segment_id
+          KeyType: HASH
+
+  ValveStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-ValveStatus-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: valve_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: valve_id
+          KeyType: HASH
+
+  IncidentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-Incidents-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: incident_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: incident_id
+          KeyType: HASH
+
+  # ============================================================
+  # SNS Topic
+  # ============================================================
+  ControlRoomAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-control-room-alerts-${Environment}"
+
+  # ============================================================
+  # IAM Roles
+  # ============================================================
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3ReadAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:ListBucket]
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query, dynamodb:Scan, dynamodb:UpdateItem]
+                Resource:
+                  - !GetAtt PipelineSegmentsTable.Arn
+                  - !GetAtt ValveStatusTable.Arn
+                  - !GetAtt IncidentsTable.Arn
+        - PolicyName: SNSPublishAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref ControlRoomAlertsTopic
+
+  AgentCoreExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-agentcore-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [bedrock-agentcore.amazonaws.com, bedrock.amazonaws.com]
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockModelAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource: "*"
+        - PolicyName: S3DataAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:ListBucket, s3:PutObject]
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query, dynamodb:Scan, dynamodb:UpdateItem]
+                Resource:
+                  - !GetAtt PipelineSegmentsTable.Arn
+                  - !GetAtt ValveStatusTable.Arn
+                  - !GetAtt IncidentsTable.Arn
+        - PolicyName: LambdaInvokeAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProjectName}-*"
+        - PolicyName: SNSPublishAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref ControlRoomAlertsTopic
+        - PolicyName: AgentCoreServicesAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:InvokeCodeInterpreter
+                  - bedrock-agentcore:StartCodeInterpreterSession
+                  - bedrock-agentcore:StopCodeInterpreterSession
+                  - bedrock-agentcore:GetCodeInterpreterSession
+                  - bedrock:Retrieve
+                  - bedrock:RetrieveAndGenerate
+                Resource: "*"
+
+  # ============================================================
+  # Lambda Functions
+  # ============================================================
+  ScadaQueryFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-scada-query-${Environment}"
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 512
+      Code:
+        S3Bucket: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+        S3Key: lambdas/scada_query.zip
+      Environment:
+        Variables:
+          SCADA_BUCKET: !Ref DataBucket
+          SEGMENTS_TABLE: !Ref PipelineSegmentsTable
+          VALVE_TABLE: !Ref ValveStatusTable
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python311:24"
+
+  IncidentMgmtFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-incident-mgmt-${Environment}"
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Code:
+        S3Bucket: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+        S3Key: lambdas/incident_mgmt.zip
+      Environment:
+        Variables:
+          INCIDENTS_TABLE: !Ref IncidentsTable
+          SNS_TOPIC_ARN: !Ref ControlRoomAlertsTopic
+
+  ScadaQueryGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ScadaQueryFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock-agentcore.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  IncidentMgmtGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentMgmtFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock-agentcore.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  DataBucketName:
+    Value: !Ref DataBucket
+    Export:
+      Name: !Sub "${ProjectName}-DataBucket-${Environment}"
+  PipelineSegmentsTableName:
+    Value: !Ref PipelineSegmentsTable
+  ValveStatusTableName:
+    Value: !Ref ValveStatusTable
+  IncidentsTableName:
+    Value: !Ref IncidentsTable
+  ControlRoomAlertsTopicArn:
+    Value: !Ref ControlRoomAlertsTopic
+  ScadaQueryFunctionArn:
+    Value: !GetAtt ScadaQueryFunction.Arn
+  IncidentMgmtFunctionArn:
+    Value: !GetAtt IncidentMgmtFunction.Arn
+  AgentCoreExecutionRoleArn:
+    Value: !GetAtt AgentCoreExecutionRole.Arn

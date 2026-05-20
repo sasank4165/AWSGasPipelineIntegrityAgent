@@ -1,0 +1,16 @@
+event_id,timestamp,station_id,fp_type,pressure_drop_psi,duration_minutes,explanation
+FP-001,2025-12-04T14:00:00,ST-01,compressor_start,13.8,19,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-002,2025-12-08T05:00:00,ST-04,compressor_start,12.5,11,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-003,2025-12-11T05:00:00,ST-02,temperature_line_pack,17.5,11,"Overnight temperature drop caused gas contraction, reducing line pack and mimicking leak signature"
+FP-004,2025-12-15T18:00:00,ST-06,valve_change,4.4,17,Control valve position change caused pressure redistribution across segment
+FP-005,2025-12-19T18:00:00,ST-01,compressor_start,13.5,20,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-006,2025-12-23T12:00:00,ST-03,temperature_line_pack,17.2,14,"Overnight temperature drop caused gas contraction, reducing line pack and mimicking leak signature"
+FP-007,2025-12-28T02:00:00,ST-04,compressor_start,12.3,15,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-008,2026-01-01T03:00:00,ST-05,valve_change,13.8,17,Control valve position change caused pressure redistribution across segment
+FP-009,2026-01-10T19:00:00,ST-07,temperature_line_pack,15.3,9,"Overnight temperature drop caused gas contraction, reducing line pack and mimicking leak signature"
+FP-010,2026-01-15T11:00:00,ST-01,compressor_start,11.5,19,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-011,2026-01-20T02:00:00,ST-04,valve_change,11.1,18,Control valve position change caused pressure redistribution across segment
+FP-012,2026-01-25T00:00:00,ST-02,temperature_line_pack,15.9,23,"Overnight temperature drop caused gas contraction, reducing line pack and mimicking leak signature"
+FP-013,2026-02-02T03:00:00,ST-06,compressor_start,10.1,19,Compressor startup transient caused momentary pressure surge and flow imbalance
+FP-014,2026-02-07T20:00:00,ST-03,valve_change,16.5,22,Control valve position change caused pressure redistribution across segment
+FP-015,2026-02-19T04:00:00,ST-07,temperature_line_pack,10.1,24,"Overnight temperature drop caused gas contraction, reducing line pack and mimicking leak signature"

@@ -1,0 +1,51 @@
+encroachment_id,segment_id,mile_marker,encroachment_type,reported_date,status,risk_level,distance_from_pipe_ft
+ENC-001,SEG-07,37.9,Road Crossing,2025-03-01,Closed,High,42.0
+ENC-002,SEG-07,13.9,Construction,2025-03-14,Monitoring,High,8.0
+ENC-003,SEG-04,22.0,Construction,2025-08-24,Monitoring,Low,50.0
+ENC-004,SEG-07,45.3,Agricultural,2025-07-02,Monitoring,Medium,32.0
+ENC-005,SEG-02,4.0,Agricultural,2025-02-15,Open,Low,8.0
+ENC-006,SEG-05,29.7,Residential Development,2025-08-10,Closed,Medium,45.0
+ENC-007,SEG-04,40.8,Utility Crossing,2025-10-01,Monitoring,Low,21.0
+ENC-008,SEG-02,28.4,Agricultural,2025-08-28,Open,High,36.0
+ENC-009,SEG-05,46.2,Excavation,2025-09-09,Monitoring,Low,43.0
+ENC-010,SEG-07,17.6,Road Crossing,2025-12-08,Closed,Low,12.0
+ENC-011,SEG-05,5.6,Road Crossing,2025-10-12,Monitoring,Medium,43.0
+ENC-012,SEG-01,8.0,Agricultural,2025-02-05,Monitoring,High,33.0
+ENC-013,SEG-05,48.8,Utility Crossing,2025-01-12,Closed,Low,46.0
+ENC-014,SEG-04,4.0,Road Crossing,2025-06-29,Open,High,46.0
+ENC-015,SEG-02,11.8,Utility Crossing,2025-09-12,Monitoring,Medium,29.0
+ENC-016,SEG-03,21.1,Construction,2025-01-06,Open,High,20.0
+ENC-017,SEG-03,10.1,Excavation,2025-02-09,Open,Medium,42.0
+ENC-018,SEG-01,1.3,Residential Development,2025-03-24,Monitoring,Medium,39.0
+ENC-019,SEG-04,12.9,Agricultural,2025-07-09,Monitoring,Medium,13.0
+ENC-020,SEG-03,4.9,Excavation,2025-08-23,Monitoring,Medium,18.0
+ENC-021,SEG-04,6.2,Utility Crossing,2025-03-20,Closed,Low,21.0
+ENC-022,SEG-02,31.2,Construction,2025-08-25,Open,High,18.0
+ENC-023,SEG-02,42.3,Excavation,2025-05-11,Monitoring,High,38.0
+ENC-024,SEG-01,26.1,Utility Crossing,2025-03-20,Monitoring,Low,33.0
+ENC-025,SEG-07,9.6,Road Crossing,2025-06-06,Closed,Low,26.0
+ENC-026,SEG-05,39.4,Residential Development,2025-02-08,Monitoring,Low,37.0
+ENC-027,SEG-03,3.6,Construction,2025-01-17,Closed,High,11.0
+ENC-028,SEG-02,29.6,Utility Crossing,2025-01-30,Open,High,17.0
+ENC-029,SEG-04,12.3,Utility Crossing,2025-12-05,Closed,Medium,17.0
+ENC-030,SEG-01,32.8,Utility Crossing,2025-04-22,Closed,Low,29.0
+ENC-031,SEG-07,34.0,Construction,2025-10-26,Closed,Low,17.0
+ENC-032,SEG-03,8.0,Agricultural,2025-08-28,Closed,High,27.0
+ENC-033,SEG-03,44.7,Agricultural,2025-03-27,Monitoring,Low,13.0
+ENC-034,SEG-03,4.6,Excavation,2025-03-11,Open,High,44.0
+ENC-035,SEG-05,16.3,Excavation,2025-05-26,Closed,Low,35.0
+ENC-036,SEG-07,28.4,Construction,2025-10-03,Open,High,47.0
+ENC-037,SEG-05,36.3,Utility Crossing,2025-08-16,Closed,Medium,29.0
+ENC-038,SEG-02,16.6,Utility Crossing,2025-05-19,Monitoring,Low,12.0
+ENC-039,SEG-04,7.3,Utility Crossing,2025-12-26,Monitoring,Medium,23.0
+ENC-040,SEG-07,15.6,Construction,2025-11-17,Monitoring,Medium,45.0
+ENC-041,SEG-06,30.0,Utility Crossing,2025-10-28,Open,Low,24.0
+ENC-042,SEG-05,2.5,Road Crossing,2025-05-18,Monitoring,Low,7.0
+ENC-043,SEG-01,17.4,Construction,2025-12-10,Closed,Low,19.0
+ENC-044,SEG-04,26.5,Residential Development,2025-01-18,Closed,Medium,8.0
+ENC-045,SEG-07,29.9,Utility Crossing,2025-11-12,Open,Medium,11.0
+ENC-046,SEG-03,49.0,Road Crossing,2025-06-21,Monitoring,High,34.0
+ENC-047,SEG-04,10.3,Excavation,2025-06-26,Monitoring,High,44.0
+ENC-048,SEG-05,14.8,Construction,2025-07-27,Closed,Low,49.0
+ENC-049,SEG-07,23.0,Excavation,2025-01-11,Closed,Medium,6.0
+ENC-050,SEG-03,5.9,Residential Development,2025-06-24,Open,High,6.0

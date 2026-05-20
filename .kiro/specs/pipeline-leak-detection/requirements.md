@@ -89,7 +89,20 @@ The system replaces brittle threshold-based SCADA alarms with contextual AI reas
 3. WHEN the agent generates isolation valve recommendations THEN it SHALL cross-reference the operating procedures for correct valve closure sequences.
 4. WHEN the agent drafts PHMSA notifications THEN it SHALL use the indexed Form 7100.1 field requirements to ensure completeness.
 
-### Requirement 8: Agent Infrastructure and Deployment
+### Requirement 8: Monitoring Dashboard
+
+**User Story:** As a pipeline controller, I want a real-time monitoring dashboard showing pipeline status, active incidents, and agent reasoning, so that I can visually track the system's health and respond to alerts without relying solely on SNS notifications.
+
+#### Acceptance Criteria
+
+1. WHEN a controller opens the dashboard THEN the system SHALL display the current status of all 8 stations including pressure, flow, temperature, and compressor/valve state.
+2. WHEN an incident is created by the agent THEN the dashboard SHALL display it in an active incidents panel with severity color coding (green/yellow/orange/red) within 30 seconds.
+3. WHEN a controller selects an incident THEN the dashboard SHALL show the agent's full reasoning timeline: anomaly trigger → false positive checks → localization → severity → recommended actions.
+4. WHEN the dashboard loads THEN it SHALL display a pipeline segment overview showing the 7 segments with their from/to stations and any active leak locations.
+5. WHEN the dashboard is accessed THEN it SHALL be hosted on SageMaker Studio as a Streamlit application, accessible via Studio's proxied URL without additional authentication infrastructure.
+6. WHEN the dashboard queries data THEN it SHALL read directly from DynamoDB (incidents, segments, valve status) and S3 (SCADA readings) using the SageMaker Studio execution role's credentials.
+
+### Requirement 9: Agent Infrastructure and Deployment
 
 **User Story:** As a platform engineer, I want the pipeline integrity agent deployed on AgentCore with proper tool integrations, so that it can be invoked reliably and scale with telemetry volume.
 
@@ -101,3 +114,4 @@ The system replaces brittle threshold-based SCADA alarms with contextual AI reas
 4. WHEN the agent needs real-time weather data THEN it SHALL use AgentCore Browser to fetch current conditions for temperature correction.
 5. WHEN the agent needs to create incidents or control valves THEN it SHALL call the incident management and valve control Lambda tools exposed via AgentCore Gateway.
 6. WHEN the agent needs pipeline specs or regulatory references THEN it SHALL query the Bedrock Knowledge Base exposed as an MCP tool via AgentCore Gateway.
+7. WHEN the monitoring dashboard is deployed THEN it SHALL be runnable from SageMaker Studio without requiring additional infrastructure provisioning.

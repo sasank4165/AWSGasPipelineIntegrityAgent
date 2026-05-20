@@ -1,0 +1,6 @@
+event_id,onset_timestamp,true_leak_location_mile_marker,affected_segment,leak_rate_mmscfd,severity,detection_lag_minutes
+LK-001,2025-12-12T23:48:00,47.2,SEG-02,0.18,seep,14
+LK-002,2026-01-04T23:55:00,119.3,SEG-05,0.52,moderate,4
+LK-003,2026-01-27T23:55:00,72.0,SEG-03,1.1,significant,9
+LK-004,2026-02-10T23:51:00,182.1,SEG-07,0.35,moderate,10
+LK-005,2026-02-23T23:49:00,13.6,SEG-01,2.4,near_rupture,6

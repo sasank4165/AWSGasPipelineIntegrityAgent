@@ -1,0 +1,8 @@
+segment_id,from_station,to_station,length_miles,diameter_in,wall_thickness_in,material_grade,max_operating_pressure_psi,elevation_start_ft,elevation_end_ft,valve_locations_mile_markers,maop_psi
+SEG-01,ST-01,ST-02,28,24,0.375,X65,850,2850,2720,"8,18",850
+SEG-02,ST-02,ST-03,24,24,0.375,X65,850,2720,2680,"38,48",850
+SEG-03,ST-03,ST-04,26,24,0.375,X65,850,2680,2590,"60,70",850
+SEG-04,ST-04,ST-05,26,24,0.375,X65,850,2590,2540,"88,100",850
+SEG-05,ST-05,ST-06,26,24,0.375,X65,850,2540,2480,"112,122",850
+SEG-06,ST-06,ST-07,28,24,0.375,X65,850,2480,2420,"138,150",850
+SEG-07,ST-07,ST-08,42,24,0.375,X65,850,2420,2350,"168,182,192",850

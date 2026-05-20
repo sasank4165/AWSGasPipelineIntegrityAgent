@@ -1,0 +1,501 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Pipeline Integrity Agent — core infrastructure stack.
+  Provisions S3 data lake, DynamoDB tables, Lambda tools, SNS alerts,
+  Bedrock Knowledge Base (OpenSearch Serverless), and IAM roles.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  ProjectName:
+    Type: String
+    Default: pipeline-integrity-agent
+
+Resources:
+  # ============================================================
+  # S3 Bucket — SCADA data lake + Knowledge Base document source
+  # ============================================================
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-data-${AWS::AccountId}-${Environment}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ============================================================
+  # DynamoDB Tables
+  # ============================================================
+
+  # Stores pipeline segment metadata (geometry, valves, MAOP)
+  PipelineSegmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-PipelineSegments-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: segment_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: segment_id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Stores current valve positions and test results
+  ValveStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-ValveStatus-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: valve_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: valve_id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Stores incident reports created by the agent
+  IncidentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-Incidents-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: incident_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: incident_id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ============================================================
+  # SNS Topic — Control room alert notifications
+  # ============================================================
+  ControlRoomAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-control-room-alerts-${Environment}"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ============================================================
+  # IAM Roles
+  # ============================================================
+
+  # Lambda execution role — shared by SCADA query and incident mgmt Lambdas
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3ReadAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt PipelineSegmentsTable.Arn
+                  - !GetAtt ValveStatusTable.Arn
+                  - !GetAtt IncidentsTable.Arn
+        - PolicyName: SNSPublishAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !Ref ControlRoomAlertsTopic
+
+  # AgentCore Runtime execution role — used by the deployed agent
+  AgentCoreExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-agentcore-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - bedrock-agentcore.amazonaws.com
+                - bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockModelAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: "*"
+        - PolicyName: S3DataAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/*"
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt PipelineSegmentsTable.Arn
+                  - !GetAtt ValveStatusTable.Arn
+                  - !GetAtt IncidentsTable.Arn
+        - PolicyName: LambdaInvokeAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProjectName}-*"
+        - PolicyName: SNSPublishAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !Ref ControlRoomAlertsTopic
+        - PolicyName: CodeInterpreterAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:InvokeCodeInterpreter
+                  - bedrock-agentcore:StartCodeInterpreterSession
+                  - bedrock-agentcore:StopCodeInterpreterSession
+                  - bedrock-agentcore:GetCodeInterpreterSession
+                Resource: "*"
+        - PolicyName: KnowledgeBaseAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:Retrieve
+                  - bedrock:RetrieveAndGenerate
+                Resource: "*"
+
+
+  # ============================================================
+  # Lambda Functions
+  # ============================================================
+
+  # SCADA Query Lambda — reads SCADA CSV data from S3, queries DynamoDB metadata
+  ScadaQueryFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-scada-query-${Environment}"
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 512
+      Code:
+        S3Bucket: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+        S3Key: lambdas/scada_query.zip
+      Environment:
+        Variables:
+          SCADA_BUCKET: !Ref DataBucket
+          SEGMENTS_TABLE: !Ref PipelineSegmentsTable
+          VALVE_TABLE: !Ref ValveStatusTable
+          ENVIRONMENT: !Ref Environment
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python311:24"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Incident Management Lambda — creates incidents in DynamoDB, publishes SNS alerts
+  IncidentMgmtFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-incident-mgmt-${Environment}"
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Code:
+        S3Bucket: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+        S3Key: lambdas/incident_mgmt.zip
+      Environment:
+        Variables:
+          INCIDENTS_TABLE: !Ref IncidentsTable
+          SNS_TOPIC_ARN: !Ref ControlRoomAlertsTopic
+          ENVIRONMENT: !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Permission for AgentCore Gateway to invoke SCADA query Lambda
+  ScadaQueryGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ScadaQueryFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock-agentcore.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  # Permission for AgentCore Gateway to invoke Incident Mgmt Lambda
+  IncidentMgmtGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentMgmtFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock-agentcore.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  # ============================================================
+  # Bedrock Knowledge Base — Operating procedures + PHMSA regs
+  # ============================================================
+
+  # OpenSearch Serverless encryption policy (required before collection creation)
+  KBEncryptionPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub "pia-kb-enc-${Environment}"
+      Type: encryption
+      Policy: !Sub >
+        {"Rules":[{"ResourceType":"collection","Resource":["collection/${ProjectName}-kb-${Environment}"]}],"AWSOwnedKey":true}
+
+  # OpenSearch Serverless network policy — allow public access for KB queries
+  KBNetworkPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub "pia-kb-net-${Environment}"
+      Type: network
+      Policy: !Sub >
+        [{"Rules":[{"ResourceType":"collection","Resource":["collection/${ProjectName}-kb-${Environment}"]},{"ResourceType":"dashboard","Resource":["collection/${ProjectName}-kb-${Environment}"]}],"AllowFromPublic":true}]
+
+  # IAM role for the Bedrock Knowledge Base (defined before collection to break circular dep)
+  KnowledgeBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-kb-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: S3ReadAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DataBucket.Arn
+                  - !Sub "${DataBucket.Arn}/knowledge-base/*"
+        - PolicyName: BedrockEmbeddingAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource:
+                  - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0"
+        - PolicyName: OpenSearchServerlessAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - aoss:APIAccessAll
+                Resource:
+                  - !Sub "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/*"
+
+  # OpenSearch Serverless data access policy — grant KB role index/document access
+  KBDataAccessPolicy:
+    Type: AWS::OpenSearchServerless::AccessPolicy
+    Properties:
+      Name: !Sub "pia-kb-access-${Environment}"
+      Type: data
+      Policy: !Sub >
+        [{"Rules":[{"ResourceType":"index","Resource":["index/${ProjectName}-kb-${Environment}/*"],"Permission":["aoss:CreateIndex","aoss:UpdateIndex","aoss:DescribeIndex","aoss:ReadDocument","aoss:WriteDocument"]},{"ResourceType":"collection","Resource":["collection/${ProjectName}-kb-${Environment}"],"Permission":["aoss:CreateCollectionItems","aoss:DescribeCollectionItems","aoss:UpdateCollectionItems"]}],"Principal":["${KnowledgeBaseRole.Arn}"]}]
+
+  # OpenSearch Serverless collection for vector embeddings
+  KBVectorCollection:
+    Type: AWS::OpenSearchServerless::Collection
+    DependsOn:
+      - KBEncryptionPolicy
+      - KBNetworkPolicy
+      - KBDataAccessPolicy
+    Properties:
+      Name: !Sub "${ProjectName}-kb-${Environment}"
+      Type: VECTORSEARCH
+      Description: Vector store for pipeline operating procedures and PHMSA regulations
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Bedrock Knowledge Base resource
+  PipelineKnowledgeBase:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Name: !Sub "${ProjectName}-kb-${Environment}"
+      Description: Pipeline operating procedures and DOT PHMSA regulatory references
+      RoleArn: !GetAtt KnowledgeBaseRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: VECTOR
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0"
+      StorageConfiguration:
+        Type: OPENSEARCH_SERVERLESS
+        OpensearchServerlessConfiguration:
+          CollectionArn: !GetAtt KBVectorCollection.Arn
+          VectorIndexName: pipeline-kb-index
+          FieldMapping:
+            VectorField: embedding
+            TextField: text
+            MetadataField: metadata
+
+  # S3 data source connector for the Knowledge Base
+  KBDataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref PipelineKnowledgeBase
+      Name: !Sub "${ProjectName}-kb-s3-source-${Environment}"
+      Description: S3 source for pipeline operating procedures and PHMSA regulatory PDFs
+      DataSourceConfiguration:
+        Type: S3
+        S3Configuration:
+          BucketArn: !GetAtt DataBucket.Arn
+          InclusionPrefixes:
+            - "knowledge-base/"
+
+# ============================================================
+# Outputs — referenced by deployment scripts and agent config
+# ============================================================
+Outputs:
+  DataBucketName:
+    Description: S3 bucket for SCADA data and KB documents
+    Value: !Ref DataBucket
+    Export:
+      Name: !Sub "${ProjectName}-DataBucket-${Environment}"
+
+  DataBucketArn:
+    Description: ARN of the S3 data bucket
+    Value: !GetAtt DataBucket.Arn
+
+  PipelineSegmentsTableName:
+    Description: DynamoDB table for pipeline segment metadata
+    Value: !Ref PipelineSegmentsTable
+
+  ValveStatusTableName:
+    Description: DynamoDB table for valve status
+    Value: !Ref ValveStatusTable
+
+  IncidentsTableName:
+    Description: DynamoDB table for incident reports
+    Value: !Ref IncidentsTable
+
+  ControlRoomAlertsTopicArn:
+    Description: SNS topic ARN for control room alerts
+    Value: !Ref ControlRoomAlertsTopic
+
+  ScadaQueryFunctionArn:
+    Description: ARN of the SCADA query Lambda
+    Value: !GetAtt ScadaQueryFunction.Arn
+
+  IncidentMgmtFunctionArn:
+    Description: ARN of the incident management Lambda
+    Value: !GetAtt IncidentMgmtFunction.Arn
+
+  AgentCoreExecutionRoleArn:
+    Description: IAM role ARN for AgentCore Runtime
+    Value: !GetAtt AgentCoreExecutionRole.Arn
+
+  KnowledgeBaseId:
+    Description: Bedrock Knowledge Base ID
+    Value: !Ref PipelineKnowledgeBase
+
+  KnowledgeBaseArn:
+    Description: Bedrock Knowledge Base ARN
+    Value: !GetAtt PipelineKnowledgeBase.KnowledgeBaseArn
+
+  KBVectorCollectionArn:
+    Description: OpenSearch Serverless collection ARN
+    Value: !GetAtt KBVectorCollection.Arn
+
+  LambdaExecutionRoleArn:
+    Description: IAM role ARN for Lambda functions
+    Value: !GetAtt LambdaExecutionRole.Arn
+
+  KnowledgeBaseRoleArn:
+    Description: IAM role ARN for Knowledge Base
+    Value: !GetAtt KnowledgeBaseRole.Arn
