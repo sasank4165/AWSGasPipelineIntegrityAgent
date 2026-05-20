@@ -1,4 +1,3 @@
-https://youtu.be/FRqtX8cU46g
 # Pipeline Integrity Agent
 ## Autonomous Leak Detection with Amazon Bedrock AgentCore
 
@@ -579,3 +578,6 @@ aws s3 rb s3://pipeline-integrity-agent-artifacts-${ACCOUNT_ID} --force
 - [Strands Agents SDK](https://strandsagents.com/)
 - [AgentCore Starter Toolkit](https://github.com/aws/bedrock-agentcore-starter-toolkit)
 - [DOT PHMSA Pipeline Safety Regulations (49 CFR 191)](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-I/subchapter-D/part-191)
+
+## Demo
+https://www.youtube.com/watch?v=FRqtX8cU46g
