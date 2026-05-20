@@ -1,3 +1,21 @@
 streamlit run app.py --server.port 8501 --server.headless true --server.enableCORS false --server.enableXsrfProtection false
 
 python3 simulate_live_scada.py --speed 10 --interval 5
+
+# Pull dashboard code from S3
+aws s3 cp s3://pipeline-integrity-agent-data-211125430374-dev/dashboard/ ./dashboard/ --recursive
+
+# Install dependencies
+pip install -q streamlit plotly pandas boto3
+
+# Set environment variables
+export AWS_DEFAULT_REGION=us-west-2
+export SCADA_BUCKET=pipeline-integrity-agent-data-211125430374-dev
+export INCIDENTS_TABLE=pipeline-integrity-agent-Incidents-dev
+export SEGMENTS_TABLE=pipeline-integrity-agent-PipelineSegments-dev
+export VALVE_TABLE=pipeline-integrity-agent-ValveStatus-dev
+export SCADA_S3_KEY=scada/scada_timeseries.csv
+
+# Launch Streamlit
+cd dashboard
+streamlit run app.py --server.port 8501 --server.headless true --server.enableCORS false --server.enableXsrfProtection false
